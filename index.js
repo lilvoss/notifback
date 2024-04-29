@@ -2,6 +2,8 @@ import {initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getMessaging } from "firebase-admin/messaging";
 import express, { json } from "express";
 import cors from "cors";
+import admin from "firebase-admin";
+import serviceAccount from "serverkey.json" assert { type: "json" };
 
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS;
@@ -28,7 +30,7 @@ app.use(function(req, res, next) {
 
 
 initializeApp({
-  credential: applicationDefault(),
+    credential: admin.credential.cert(serviceAccount),
   projectId: 'notification-c9eb3',
 });
 
