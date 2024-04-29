@@ -65,7 +65,7 @@ const sendDailyDoua = () => {
     });
 };
 
-// Planifier l'envoi quotidien du doua à 8h du matin
+// Planifier l'envoi quotidien du doua à 23h du soir
 schedule.scheduleJob('0 23 * * *', () => {
   sendDailyDoua();
 });
