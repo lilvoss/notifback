@@ -35,33 +35,43 @@ initializeApp({
 });
 
 app.post("/send", function (req, res) {
-  const receivedToken = req.body.fcmToken;
+    const receivedToken = req.body.fcmToken;
+    console.log("Received FCM Token:", receivedToken);
   
-  const message = {
-    notification: {
-      title: "Notif",
-      body: 'This is a Test Notification'
-    },
-    token: "e76EReYaSySl-8KGAdOC6I:APA91bH34YuuwsNnMsOuzHtu-HSGlnPMD3diiTpaXX1Shvlq-BIRKN20DUrSbhl7g8iGErQPiXxEjGuQ7G99F4JzkI1ZtfkQjJ1G2HQVTB2fla4QqtRrr0v4kJD6igD8WqI3YkIlqeWK",
-  };
+    // Construct the message object with the received FCM token
+    const message = {
+      notification: {
+        title: "Notif",
+        body: 'This is a Test Notification'
+      },
+      token: receivedToken, // Use the received FCM token dynamically
+    };
   
-  getMessaging()
-    .send(message)
-    .then((response) => {
-      res.status(200).json({
-        message: "Successfully sent message",
-        token: receivedToken,
+    // Send the notification
+    getMessaging()
+      .send(message)
+      .then((response) => {
+        res.status(200).json({
+          message: "Successfully sent message",
+          token: receivedToken,
+        });
+        console.log("Successfully sent message:", response);
+      })
+      .catch((error) => {
+        res.status(400);
+        res.send(error);
+        console.log("Error sending message:", error);
       });
-      console.log("Successfully sent message:", response);
-    })
-    .catch((error) => {
-      res.status(400);
-      res.send(error);
-      console.log("Error sending message:", error);
-    });
-  
-  
-});
+  });
+
+app.post("/sendToken", function (req, res) {
+    const receivedToken = req.body.fcmToken;
+    console.log("Received FCM Token:", receivedToken);
+    
+    // Here you can store the token in your database or perform any other actions
+    
+    res.status(200).json({ message: "FCM token received successfully" });
+  });
 
 app.listen(3000, function () {
   console.log("Server started on port 3000");
