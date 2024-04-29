@@ -3,7 +3,7 @@ import { getMessaging } from "firebase-admin/messaging";
 import express, { json } from "express";
 import cors from "cors";
 import admin from "firebase-admin";
-import serviceAccount from "serverkey.json" assert { type: "json" };
+import serviceAccount from "./serverkey.json" assert { type: "json" };
 
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS;
