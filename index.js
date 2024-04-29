@@ -64,7 +64,7 @@ app.post("/send", function (req, res) {
       });
   });
 
-app.post("/sendToken", function (req, res) {
+app.get("/sendToken", function (req, res) {
     const receivedToken = req.body.fcmToken;
     console.log("Received FCM Token:", receivedToken);
     
