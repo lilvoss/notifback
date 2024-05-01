@@ -86,9 +86,9 @@ app.post("/send", async function (req, res) {
 
     tokensSnapshot.forEach(doc => {
       tokens.push(doc.data().token);
-      
-      
     });
+
+    console.log("Tokens:", tokens); // Ajout d'un log pour afficher les tokens récupérés
 
     // Send message to each token
     const responses = await Promise.all(
@@ -96,6 +96,8 @@ app.post("/send", async function (req, res) {
         return getMessaging().sendToDevice(token, message);
       })
     );
+
+    console.log("Responses:", responses); // Ajout d'un log pour afficher les réponses de l'envoi de message
 
     // Handle responses
     responses.forEach((response, index) => {
@@ -115,6 +117,7 @@ app.post("/send", async function (req, res) {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 
 
