@@ -32,6 +32,35 @@ app.use(function(req, res, next) {
 initializeApp({
     credential: admin.credential.cert(serviceAccount),
   projectId: 'notification-c9eb3',
+  databaseURL: "https://notification-c9eb3-default-rtdb.firebaseio.com/"
+});
+
+
+const db = admin.firestore();
+
+
+app.post("/save-token", async (req, res) => {
+  try {
+    const fcmToken = req.body.fcmToken;
+    if (!fcmToken) {
+      return res.status(400).json({ error: "FCM token is required" });
+    }
+
+    // Check if the token already exists in the database
+    const tokenRef = db.collection("tokens").doc(fcmToken);
+    const tokenDoc = await tokenRef.get();
+
+    if (tokenDoc.exists) {
+      return res.status(200).json({ message: "Token already exists" });
+    } else {
+      // Save the token in the database
+      await tokenRef.set({ token: fcmToken });
+      return res.status(200).json({ message: "Token saved successfully" });
+    }
+  } catch (error) {
+    console.error("Error saving token:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 app.post("/send", function (req, res) {
