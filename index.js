@@ -106,6 +106,24 @@ app.post("/send", function (req, res) {
       res.status(400).send(error);
       console.error("Error sending message:", error);
     });
+    cron.schedule('0 8 * * *', () => {
+      // Your existing code here
+      const message = {
+        notification: {
+          title: "Notif",
+          body: 'This is a Test Notification'
+        },
+        tokens: tokens, // Use tokens retrieved from Firestore
+      };
+    
+      admin.messaging().sendMulticast(message)
+        .then((response) => {
+          console.log("Successfully sent message:", response);
+        })
+        .catch((error) => {
+          console.error("Error sending message:", error);
+        });
+    });
 });
 
 
