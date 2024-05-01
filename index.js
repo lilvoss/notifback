@@ -71,61 +71,42 @@ app.post("/save-token", async (req, res) => {
 });
 
 
-app.post("/send", async function (req, res) {
-  try {
-    // Get all tokens from the database
-    const tokensSnapshot = await db.collection("tokens").get();
-    const tokens = [];
+app.post("/send", function (req, res) {
+  const receivedToken = req.body.fcmToken;
+  let tokens; // Déplacez la définition de la variable tokens ici
+  
+  // Get tokens from Firestore
+  db.collection("tokens").get()
+    .then((snapshot) => {
+      tokens = []; // Réinitialisez tokens ici pour éviter les problèmes de portée
+      snapshot.forEach((doc) => {
+        tokens.push(doc.data().token);
+      });
 
-    tokensSnapshot.forEach(doc => {
-      tokens.push(doc.data().token);
+      // Construct message with tokens
+      const message = {
+        notification: {
+          title: "Notif",
+          body: 'This is a Test Notification'
+        },
+        tokens: tokens, // Use tokens retrieved from Firestore
+      };
+
+      // Send message
+      return admin.messaging().sendMulticast(message);
+    })
+    .then((response) => {
+      res.status(200).json({
+        message: "Successfully sent message",
+        tokens: tokens, // Utilisez la variable tokens ici
+      });
+      console.log("Successfully sent message:", response);
+    })
+    .catch((error) => {
+      res.status(400).send(error);
+      console.error("Error sending message:", error);
     });
-
-    console.log("Tokens:", tokens); // Log retrieved tokens
-
-    // Construct the message
-    const message = {
-      notification: {
-        title: "Notif",
-        body: 'This is a Test Notification'
-      },
-    };
-
-    // Send message to each token
-    const responses = await Promise.all(
-      tokens.map(async token => {
-        try {
-          const response = await getMessaging().sendToDevice(token, message);
-          return response;
-        } catch (error) {
-          return { error: error.message };
-        }
-      })
-    );
-
-    console.log("Responses:", responses); // Log sendToDevice responses
-
-    // Handle responses
-    responses.forEach((response, index) => {
-      if (response.error) {
-        console.error("Error sending message to", tokens[index], ":", response.error);
-      } else {
-        console.log("Successfully sent message to", tokens[index]);
-      }
-    });
-
-    res.status(200).json({
-      message: "Successfully sent message to all tokens",
-      tokens: tokens
-    });
-  } catch (error) {
-    console.error("Error sending message:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
 });
-
-
-
 
 
 
