@@ -46,15 +46,22 @@ app.post("/save-token", async (req, res) => {
       return res.status(400).json({ error: "FCM token is required" });
     }
 
-    // Check if the token already exists in the database
-    const tokenRef = db.collection("tokens").doc(fcmToken);
-    const tokenDoc = await tokenRef.get();
+    // Check if any document exists in the collection
+    const tokensSnapshot = await db.collection("tokens").get();
+    let tokenExists = false;
 
-    if (tokenDoc.exists) {
+    tokensSnapshot.forEach(doc => {
+      if (doc.data().token === fcmToken) {
+        // If the same token already exists, set tokenExists to true
+        tokenExists = true;
+      }
+    });
+
+    if (tokenExists) {
       return res.status(200).json({ message: "Token already exists" });
     } else {
       // Save the token in the database
-      await tokenRef.set({ token: fcmToken });
+      await db.collection("tokens").add({ token: fcmToken });
       return res.status(200).json({ message: "Token saved successfully" });
     }
   } catch (error) {
@@ -63,9 +70,10 @@ app.post("/save-token", async (req, res) => {
   }
 });
 
+
 app.post("/send", function (req, res) {
   const receivedToken = req.body.fcmToken;
-  
+
   const message = {
     notification: {
       title: "Notif",
