@@ -86,23 +86,14 @@ app.post("/send", async function (req, res) {
 
     tokensSnapshot.forEach(doc => {
       tokens.push(doc.data().token);
+      
+      
     });
 
     // Send message to each token
     const responses = await Promise.all(
-      tokens.map(async token => {
-        try {
-          const response = await getMessaging().sendToDevice(token, message);
-          if (response.failureCount > 0) {
-            console.error("Error sending message to", token, ":", response.errors[0].error);
-          } else {
-            console.log("Successfully sent message to", token);
-          }
-          return response;
-        } catch (error) {
-          console.error("Error sending message to", token, ":", error);
-          return { failureCount: 1, errors: [{ error: error.message }] };
-        }
+      tokens.map(token => {
+        return getMessaging().sendToDevice(token, message);
       })
     );
 
@@ -125,3 +116,9 @@ app.post("/send", async function (req, res) {
   }
 });
 
+
+
+
+app.listen(3000, function () {
+  console.log("Server started on port 3000");
+});
