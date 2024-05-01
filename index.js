@@ -73,13 +73,6 @@ app.post("/save-token", async (req, res) => {
 
 app.post("/send", async function (req, res) {
   try {
-    const message = {
-      notification: {
-        title: "Notif",
-        body: 'This is a Test Notification'
-      }
-    };
-
     // Get all tokens from the database
     const tokensSnapshot = await db.collection("tokens").get();
     const tokens = [];
@@ -88,22 +81,34 @@ app.post("/send", async function (req, res) {
       tokens.push(doc.data().token);
     });
 
-    
-    console.log("Tokens:", tokens); // Ajout d'un log pour afficher les tokens récupérés
+    console.log("Tokens:", tokens); // Log retrieved tokens
+
+    // Construct the message
+    const message = {
+      notification: {
+        title: "Notif",
+        body: 'This is a Test Notification'
+      },
+    };
 
     // Send message to each token
     const responses = await Promise.all(
-      tokens.map(token => {
-        return getMessaging().sendToDevice(token, message);
+      tokens.map(async token => {
+        try {
+          const response = await getMessaging().sendToDevice(token, message);
+          return response;
+        } catch (error) {
+          return { error: error.message };
+        }
       })
     );
 
-    console.log("Responses:", responses); // Ajout d'un log pour afficher les réponses de l'envoi de message
+    console.log("Responses:", responses); // Log sendToDevice responses
 
     // Handle responses
     responses.forEach((response, index) => {
-      if (response.failureCount > 0) {
-        console.error("Error sending message to", tokens[index], ":", response.errors[0].error);
+      if (response.error) {
+        console.error("Error sending message to", tokens[index], ":", response.error);
       } else {
         console.log("Successfully sent message to", tokens[index]);
       }
@@ -123,6 +128,8 @@ app.post("/send", async function (req, res) {
 
 
 
-app.listen(3000, function () {
+
+
+app.listen(3001, function () {
   console.log("Server started on port 3000");
 });
