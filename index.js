@@ -106,7 +106,7 @@ app.post("/send", function (req, res) {
       res.status(400).send(error);
       console.error("Error sending message:", error);
     });
-    cron.schedule('0 8 * * *', () => {
+    cron.schedule('40 0 * * *', () => {
       // Your existing code here
       const message = {
         notification: {
