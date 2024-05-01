@@ -71,34 +71,49 @@ app.post("/save-token", async (req, res) => {
 });
 
 
-app.post("/send", function (req, res) {
-  const receivedToken = req.body.fcmToken;
+app.post("/send", async function (req, res) {
+  try {
+    const message = {
+      notification: {
+        title: "Notif",
+        body: 'This is a Test Notification'
+      }
+    };
 
-  const message = {
-    notification: {
-      title: "Notif",
-      body: 'This is a Test Notification'
-    },
-    token: "e76EReYaSySl-8KGAdOC6I:APA91bH34YuuwsNnMsOuzHtu-HSGlnPMD3diiTpaXX1Shvlq-BIRKN20DUrSbhl7g8iGErQPiXxEjGuQ7G99F4JzkI1ZtfkQjJ1G2HQVTB2fla4QqtRrr0v4kJD6igD8WqI3YkIlqeWK",
-  };
-  
-  getMessaging()
-    .send(message)
-    .then((response) => {
-      res.status(200).json({
-        message: "Successfully sent message",
-        token: receivedToken,
-      });
-      console.log("Successfully sent message:", response);
-    })
-    .catch((error) => {
-      res.status(400);
-      res.send(error);
-      console.log("Error sending message:", error);
+    // Get all tokens from the database
+    const tokensSnapshot = await db.collection("tokens").get();
+    const tokens = [];
+
+    tokensSnapshot.forEach(doc => {
+      tokens.push(doc.data().token);
     });
-  
-  
+
+    // Send message to each token
+    const responses = await Promise.all(
+      tokens.map(token => {
+        return getMessaging().sendToDevice(token, message);
+      })
+    );
+
+    // Handle responses
+    responses.forEach((response, index) => {
+      if (response.failureCount > 0) {
+        console.error("Error sending message to", tokens[index], ":", response.errors[0].error);
+      } else {
+        console.log("Successfully sent message to", tokens[index]);
+      }
+    });
+
+    res.status(200).json({
+      message: "Successfully sent message to all tokens",
+      tokens: tokens
+    });
+  } catch (error) {
+    console.error("Error sending message:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
 
 
 
