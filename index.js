@@ -88,6 +88,7 @@ app.post("/send", async function (req, res) {
       tokens.push(doc.data().token);
     });
 
+    
     console.log("Tokens:", tokens); // Ajout d'un log pour afficher les tokens récupérés
 
     // Send message to each token
