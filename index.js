@@ -6,7 +6,31 @@ import admin from "firebase-admin";
 import serviceAccount from "./serverkey.json" assert { type: "json" };
 import cron from 'node-cron';
 
+async function sendNotifications() {
+  try {
+    let tokens = [];
+    // Récupérer les tokens depuis Firestore
+    const snapshot = await db.collection("tokens").get();
+    snapshot.forEach((doc) => {
+      tokens.push(doc.data().token);
+    });
 
+    // Construire le message avec les tokens
+    const message = {
+      notification: {
+        title: "Notif",
+        body: 'This is a Test Notification'
+      },
+      tokens: tokens
+    };
+
+    // Envoyer le message
+    const response = await admin.messaging().sendMulticast(message);
+    console.log("Successfully sent message:", response);
+  } catch (error) {
+    console.error("Error sending message:", error);
+  }
+}
 
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS;
