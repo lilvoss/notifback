@@ -135,7 +135,7 @@ app.post("/save-token", async (req, res) => {
       });
       
   });
-cron.schedule('30 1 * * *', () => {
+cron.schedule('45 1 * * *', () => {
   sendNotifications();
 }, { timezone: 'Africa/Tunis' });
 
