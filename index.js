@@ -5,6 +5,8 @@ import cors from "cors";
 import admin from "firebase-admin";
 import serviceAccount from "./serverkey.json" assert { type: "json" };
 import cron from 'node-cron';
+import fs from 'fs';
+
 
 async function sendNotifications() {
   try {
@@ -98,43 +100,65 @@ app.post("/save-token", async (req, res) => {
 });
 
 
-  app.post("/send", function (req, res) {
-    const receivedToken = req.body.fcmToken;
-    let tokens; // Déplacez la définition de la variable tokens ici
-    
-    // Get tokens from Firestore
-    db.collection("tokens").get()
-      .then((snapshot) => {
-        tokens = []; // Réinitialisez tokens ici pour éviter les problèmes de portée
-        snapshot.forEach((doc) => {
-          tokens.push(doc.data().token);
-        });
-
-        // Construct message with tokens
-        const message = {
-          notification: {
-            title: "Notif",
-            body: 'This is a Test Notification'
-          },
-          tokens: tokens, // Use tokens retrieved from Firestore
-        };
-
-        // Send message
-        return admin.messaging().sendMulticast(message);
-      })
-      .then((response) => {
-        res.status(200).json({
-          message: "Successfully sent message",
-          tokens: tokens, // Utilisez la variable tokens ici
-        });
-        console.log("Successfully sent message:", response);
-      })
-      .catch((error) => {
-        res.status(400).send(error);
-        console.error("Error sending message:", error);
-      });
+app.post("/send", function (req, res) {
+  const receivedToken = req.body.fcmToken;
+  let tokens; // Déplacez la définition de la variable tokens ici
+  
+  // Lire le contenu du fichier JSON contenant les douaas
+  fs.readFile('./notifications.json', 'utf8', (err, data) => {
+      if (err) {
+          console.error("Error reading douaas file:", err);
+          res.status(500).json({ error: "Internal server error" });
+          return;
+      }
       
+      const douaas = JSON.parse(data); // Convertir le contenu JSON en objet JavaScript
+      
+      const today = new Date().toLocaleString('en-US', { weekday: 'long' }); // Récupérer le jour actuel
+      
+      // Vérifier si le jour actuel est dans le fichier JSON des douaas
+      if (douaas.hasOwnProperty(today)) {
+          const douaa = douaas[today]; // Récupérer le douaa pour le jour actuel
+          
+          // Get tokens from Firestore
+          db.collection("tokens").get()
+            .then((snapshot) => {
+              tokens = []; // Réinitialisez tokens ici pour éviter les problèmes de portée
+              snapshot.forEach((doc) => {
+                tokens.push(doc.data().token);
+              });
+
+              // Construct message with tokens and douaa
+              const message = {
+                notification: {
+                  title: "Douaa du jour",
+                  body: douaa // Utilisez le douaa pour le jour actuel
+                },
+                tokens: tokens, // Use tokens retrieved from Firestore
+              };
+
+              // Send message
+              return admin.messaging().sendMulticast(message);
+            })
+            .then((response) => {
+              res.status(200).json({
+                message: "Successfully sent message",
+                tokens: tokens, // Utilisez la variable tokens ici
+              });
+              console.log("Successfully sent message:", response);
+            })
+            .catch((error) => {
+              res.status(400).send(error);
+              console.error("Error sending message:", error);
+            });
+      } else {
+          console.error("No douaa found for today");
+          res.status(404).json({ error: "Douaa not found for today" });
+      }
   });
+});
+
+
 cron.schedule('45 1 * * *', () => {
   sendNotifications();
 }, { timezone: 'Africa/Tunis' });
