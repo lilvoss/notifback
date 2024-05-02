@@ -4,6 +4,9 @@ import express, { json } from "express";
 import cors from "cors";
 import admin from "firebase-admin";
 import serviceAccount from "./serverkey.json" assert { type: "json" };
+import cron from 'node-cron';
+
+
 
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS;
@@ -71,65 +74,46 @@ app.post("/save-token", async (req, res) => {
 });
 
 
-app.post("/send", function (req, res) {
-  const receivedToken = req.body.fcmToken;
-  let tokens; // Déplacez la définition de la variable tokens ici
-  
-  // Get tokens from Firestore
-  db.collection("tokens").get()
-    .then((snapshot) => {
-      tokens = []; // Réinitialisez tokens ici pour éviter les problèmes de portée
-      snapshot.forEach((doc) => {
-        tokens.push(doc.data().token);
-      });
+  app.post("/send", function (req, res) {
+    const receivedToken = req.body.fcmToken;
+    let tokens; // Déplacez la définition de la variable tokens ici
+    
+    // Get tokens from Firestore
+    db.collection("tokens").get()
+      .then((snapshot) => {
+        tokens = []; // Réinitialisez tokens ici pour éviter les problèmes de portée
+        snapshot.forEach((doc) => {
+          tokens.push(doc.data().token);
+        });
 
-      // Construct message with tokens
-      const message = {
-        notification: {
-          title: "Notif",
-          body: 'This is a Test Notification'
-        },
-        tokens: tokens, // Use tokens retrieved from Firestore
-      };
-
-      // Send message
-      return admin.messaging().sendMulticast(message);
-    })
-    .then((response) => {
-      res.status(200).json({
-        message: "Successfully sent message",
-        tokens: tokens, // Utilisez la variable tokens ici
-      });
-      console.log("Successfully sent message:", response);
-    })
-    .catch((error) => {
-      res.status(400).send(error);
-      console.error("Error sending message:", error);
-    });
-    cron.schedule('0 1 * * *', () => {
-      // Votre code existant ici
-      try {
+        // Construct message with tokens
         const message = {
           notification: {
             title: "Notif",
             body: 'This is a Test Notification'
           },
-          tokens: tokens, // Utilisez les tokens récupérés depuis Firestore
+          tokens: tokens, // Use tokens retrieved from Firestore
         };
-    
-        admin.messaging().sendMulticast(message)
-          .then((response) => {
-            console.log("Successfully sent message:", response);
-          })
-          .catch((error) => {
-            console.error("Error sending message:", error);
-          });
-      } catch (error) {
-        console.error("Error:", error);
-      }
-    }, { timezone: 'Africa/Tunis' });
-});
 
+        // Send message
+        return admin.messaging().sendMulticast(message);
+      })
+      .then((response) => {
+        res.status(200).json({
+          message: "Successfully sent message",
+          tokens: tokens, // Utilisez la variable tokens ici
+        });
+        console.log("Successfully sent message:", response);
+      })
+      .catch((error) => {
+        res.status(400).send(error);
+        console.error("Error sending message:", error);
+      });
+      
+  });
+cron.schedule('3 1 * * *', () => {
+  sendNotifications();
+}, { timezone: 'Africa/Tunis' });
 
 
 
