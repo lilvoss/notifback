@@ -10,29 +10,43 @@ import fs from 'fs';
 
 async function sendNotifications() {
   try {
-    let tokens = [];
     // Récupérer les tokens depuis Firestore
     const snapshot = await db.collection("tokens").get();
+    const tokens = [];
     snapshot.forEach((doc) => {
       tokens.push(doc.data().token);
     });
 
-    // Construire le message avec les tokens
-    const message = {
-      notification: {
-        title: "Notif",
-        body: 'This is a Test Notification'
-      },
-      tokens: tokens
-    };
+    // Lire le contenu du fichier JSON contenant les douaas
+    const data = fs.readFileSync('./notifications.json', 'utf8');
+    const douaas = JSON.parse(data);
 
-    // Envoyer le message
-    const response = await admin.messaging().sendMulticast(message);
-    console.log("Successfully sent message:", response);
+    const today = new Date().toLocaleString('en-US', { weekday: 'long' }); // Récupérer le jour actuel
+
+    // Vérifier si le jour actuel a un douaa correspondant dans le fichier JSON des douaas
+    if (douaas.hasOwnProperty(today)) {
+      const douaa = douaas[today]; // Récupérer le douaa pour le jour actuel
+
+      // Construire le message avec les tokens et le douaa pour le jour actuel
+      const message = {
+        notification: {
+          title: "دعاء اليوم",
+          body: douaa
+        },
+        tokens: tokens
+      };
+
+      // Envoyer le message
+      const response = await admin.messaging().sendMulticast(message);
+      console.log("Successfully sent message:", response);
+    } else {
+      console.error("No douaa found for today");
+    }
   } catch (error) {
     console.error("Error sending message:", error);
   }
 }
+
 
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS;
@@ -131,7 +145,7 @@ app.post("/send", function (req, res) {
               // Construct message with tokens and douaa
               const message = {
                 notification: {
-                  title: "Douaa du jour",
+                  title: "دعاء اليوم",
                   body: douaa // Utilisez le douaa pour le jour actuel
                 },
                 tokens: tokens, // Use tokens retrieved from Firestore
