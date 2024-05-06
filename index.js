@@ -120,9 +120,9 @@ app.post("/save-token", async (req, res) => {
 
 app.post("/send", function (req, res) {
   const receivedToken = req.body.fcmToken;
-  let tokens; // Déplacez la définition de la variable tokens ici
+  let tokens; // Move the definition of the tokens variable here
   
-  // Lire le contenu du fichier JSON contenant les douaas
+  // Read the content of the JSON file containing the douaas
   fs.readFile('./notifications.json', 'utf8', (err, data) => {
       if (err) {
           console.error("Error reading douaas file:", err);
@@ -130,44 +130,59 @@ app.post("/send", function (req, res) {
           return;
       }
       
-      const douaas = JSON.parse(data); // Convertir le contenu JSON en objet JavaScript
+      const douaas = JSON.parse(data); // Convert JSON content to JavaScript object
       
-      const today = new Date().toLocaleString('en-US', { weekday: 'long' }); // Récupérer le jour actuel
+      const today = new Date().toLocaleString('en-US', { weekday: 'long' }); // Get the current day
       
-      // Vérifier si le jour actuel est dans le fichier JSON des douaas
+      // Check if the current day is in the JSON file of douaas
       if (douaas.hasOwnProperty(today)) {
-          const douaa = douaas[today]; // Récupérer le douaa pour le jour actuel
+          const douaa = douaas[today]; // Get the douaa for the current day
           
           // Get tokens from Firestore
           db.collection("tokens").get()
             .then((snapshot) => {
-              tokens = []; // Réinitialisez tokens ici pour éviter les problèmes de portée
+              tokens = []; // Reset tokens here to avoid scope issues
               snapshot.forEach((doc) => {
                 tokens.push(doc.data().token);
               });
 
-              // Construct message with tokens and douaa
-              const message = {
-                notification: {
-                  title: "دعاء اليوم",
-                  body: douaa // Utilisez le douaa pour le jour actuel
-                },
-                tokens: tokens, // Use tokens retrieved from Firestore
-              };
+              // Check if dailyDouaSelected flag is true
+              db.collection("preferences").doc("notifications").get()
+                .then((prefsSnapshot) => {
+                  const tokenData = prefsSnapshot.data();
+                  if (!tokenData || !tokenData.dailyDouaSelected) {
+                    console.log("Daily doua notification is not selected");
+                    res.status(200).json({ message: "No notifications sent because daily doua is not selected" });
+                    return;
+                  }
 
-              // Send message
-              return admin.messaging().sendMulticast(message);
-            })
-            .then((response) => {
-              res.status(200).json({
-                message: "Successfully sent message",
-                tokens: tokens, // Utilisez la variable tokens ici
-              });
-              console.log("Successfully sent message:", response);
+                  // Construct message with tokens and douaa
+                  const message = {
+                    notification: {
+                      title: "دعاء اليوم",
+                      body: douaa // Use the douaa for the current day
+                    },
+                    tokens: tokens, // Use tokens retrieved from Firestore
+                  };
+
+                  // Send message
+                  return admin.messaging().sendMulticast(message);
+                })
+                .then((response) => {
+                  res.status(200).json({
+                    message: "Successfully sent message",
+                    tokens: tokens, // Use the tokens variable here
+                  });
+                  console.log("Successfully sent message:", response);
+                })
+                .catch((error) => {
+                  res.status(400).send(error);
+                  console.error("Error sending message:", error);
+                });
             })
             .catch((error) => {
               res.status(400).send(error);
-              console.error("Error sending message:", error);
+              console.error("Error retrieving tokens:", error);
             });
       } else {
           console.error("No douaa found for today");
