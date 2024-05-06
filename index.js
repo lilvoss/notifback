@@ -14,7 +14,10 @@ async function sendNotifications() {
     const snapshot = await db.collection("tokens").get();
     const tokens = [];
     snapshot.forEach((doc) => {
-      tokens.push(doc.data().token);
+      const tokenData = doc.data();
+      if (tokenData.dailyDouaSelected) { // Check if the toggle is enabled
+        tokens.push(tokenData.token);
+      }
     });
 
     // Lire le contenu du fichier JSON contenant les douaas
@@ -85,6 +88,7 @@ const db = admin.firestore();
 app.post("/save-token", async (req, res) => {
   try {
     const fcmToken = req.body.fcmToken;
+    const dailyDouaSelected = req.body.dailyDouaSelected; // Add this line to get the toggle state
     if (!fcmToken) {
       return res.status(400).json({ error: "FCM token is required" });
     }
@@ -103,8 +107,8 @@ app.post("/save-token", async (req, res) => {
     if (tokenExists) {
       return res.status(200).json({ message: "Token already exists" });
     } else {
-      // Save the token in the database
-      await db.collection("tokens").add({ token: fcmToken });
+      // Save the token and the toggle state in the database
+      await db.collection("tokens").add({ token: fcmToken, dailyDouaSelected: dailyDouaSelected });
       return res.status(200).json({ message: "Token saved successfully" });
     }
   } catch (error) {
